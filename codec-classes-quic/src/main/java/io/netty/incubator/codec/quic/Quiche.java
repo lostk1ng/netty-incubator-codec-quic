@@ -476,6 +476,8 @@ final class Quiche {
      */
     static native int quiche_conn_set_session(long connAddr, byte[] sessionBytes);
 
+    static native void quiche_conn_set_token(long connAddr, long tokenAddr, int tokenLen);
+
     /**
      * See
      * <a href="https://github.com/cloudflare/quiche/blob/0.6.0/include/quiche.h#L115">quiche_config_new</a>.

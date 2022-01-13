@@ -30,13 +30,18 @@ public final class NoValidationQuicTokenHandler implements QuicTokenHandler {
     public static final NoValidationQuicTokenHandler INSTANCE = new NoValidationQuicTokenHandler();
 
     @Override
-    public boolean writeToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address) {
+    public boolean writeRetryToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address) {
         return false;
     }
 
     @Override
-    public int validateToken(ByteBuf token, InetSocketAddress address) {
-        return 0;
+    public boolean writeNewToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address) {
+        return false;
+    }
+
+    @Override
+    public ResultWrapper validateToken(ByteBuf token, InetSocketAddress address) {
+        return new ResultWrapper(0);
     }
 
     @Override

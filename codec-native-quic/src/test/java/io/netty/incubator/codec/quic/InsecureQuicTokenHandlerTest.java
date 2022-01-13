@@ -68,12 +68,12 @@ public class InsecureQuicTokenHandlerTest extends AbstractQuicTest {
                         new byte[] { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}), 9999);
             }
 
-            InsecureQuicTokenHandler.INSTANCE.writeToken(out, dcid, validAddress);
+            InsecureQuicTokenHandler.INSTANCE.writeRetryToken(out, dcid, validAddress);
             assertThat(out.readableBytes(), lessThanOrEqualTo(InsecureQuicTokenHandler.INSTANCE.maxTokenLength()));
-            assertNotEquals(-1, InsecureQuicTokenHandler.INSTANCE.validateToken(out, validAddress));
+            assertNotEquals(-1, InsecureQuicTokenHandler.INSTANCE.validateToken(out, validAddress).getOffset());
 
             // Use another address and check that the validate fails.
-            assertEquals(-1, InsecureQuicTokenHandler.INSTANCE.validateToken(out, invalidAddress));
+            assertEquals(-1, InsecureQuicTokenHandler.INSTANCE.validateToken(out, invalidAddress).getOffset());
         } finally {
             dcid.release();
             out.release();

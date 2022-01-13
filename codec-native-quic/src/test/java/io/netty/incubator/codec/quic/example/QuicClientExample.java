@@ -26,12 +26,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.incubator.codec.quic.QuicChannel;
-import io.netty.incubator.codec.quic.QuicClientCodecBuilder;
-import io.netty.incubator.codec.quic.QuicSslContext;
-import io.netty.incubator.codec.quic.QuicSslContextBuilder;
-import io.netty.incubator.codec.quic.QuicStreamChannel;
-import io.netty.incubator.codec.quic.QuicStreamType;
+import io.netty.incubator.codec.quic.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.NetUtil;
 
@@ -72,6 +67,19 @@ public final class QuicClientExample {
                             ctx.close();
                         }
                     })
+                    .tokenCache(new QuicClientTokenCache() {
+                        @Override
+                        public ByteBuf getToken() {
+                            ByteBuf token = Unpooled.directBuffer();
+                            InsecureQuicTokenHandler.INSTANCE.writeNewToken(token, null,
+                                    new InetSocketAddress(NetUtil.LOCALHOST4, 9999));
+                            return token;
+
+//                            String token = "6e657474797f0000014b8894e30107e1664e9a125bd69629be";
+//                            return Unpooled.directBuffer().writeBytes(hexToByteArray(token));
+//                            return null;
+                        }
+                    })
                     .remoteAddress(new InetSocketAddress(NetUtil.LOCALHOST4, 9999))
                     .connect()
                     .get();
@@ -108,4 +116,28 @@ public final class QuicClientExample {
             group.shutdownGracefully();
         }
     }
+    public static byte[] hexToByteArray(String inHex){
+        int hexlen = inHex.length();
+        byte[] result;
+        if (hexlen % 2 == 1){
+            //奇数
+            hexlen++;
+            result = new byte[(hexlen/2)];
+            inHex="0"+inHex;
+        }else {
+            //偶数
+            result = new byte[(hexlen/2)];
+        }
+        int j=0;
+        for (int i = 0; i < hexlen; i+=2){
+            result[j]=hexToByte(inHex.substring(i,i+2));
+            j++;
+        }
+        return result;
+    }
+
+    public static byte hexToByte(String inHex){
+        return (byte)Integer.parseInt(inHex,16);
+    }
+
 }

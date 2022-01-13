@@ -23,27 +23,78 @@ import java.net.InetSocketAddress;
  * Handle token related operations.
  */
 public interface QuicTokenHandler {
+    /**
+     * Token validation result
+     */
+    class ResultWrapper {
+        /**
+         * The start index after the token or {@code -1} if the token was not valid.
+         */
+        int offset;
+
+        /**
+         * The token type {@link QuicTokenType}
+         */
+        QuicTokenType quicTokenType;
+
+        public ResultWrapper(int offset) {
+            this.offset = offset;
+        }
+
+        public ResultWrapper(int offset, QuicTokenType quicTokenType) {
+            this.offset = offset;
+            this.quicTokenType = quicTokenType;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
+
+        public void setOffset(int offset) {
+            this.offset = offset;
+        }
+
+        public QuicTokenType getQuicTokenType() {
+            return quicTokenType;
+        }
+
+        public void setQuicTokenType(QuicTokenType quicTokenType) {
+            this.quicTokenType = quicTokenType;
+        }
+    }
 
     /**
-     * Generate a new token for the given destination connection id and address. This token is written to {@code out}.
-     * If no token should be generated and so no token validation should take place at all this method should return
-     * {@code false}.
+     * Generate a new {@link QuicTokenType#RETRY} token for the given destination connection id and address. This token
+     * is written to {@code out}. If no token should be generated and so no token validation should take place at all
+     * this method should return {@code false}.
      *
      * @param out       {@link ByteBuf} into which the token will be written.
      * @param dcid      the destination connection id.
      * @param address   the {@link InetSocketAddress} of the sender.
      * @return          {@code true} if a token was written and so validation should happen, {@code false} otherwise.
      */
-    boolean writeToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address);
+    boolean writeRetryToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address);
 
     /**
-     * Validate the token and return the offset, {@code -1} is returned if the token is not valid.
+     * Generate a {@link QuicTokenType#NEW} token for the given destination connection id and address. This token
+     * is written to {@code out}. If no token should be generated and so no token validation should take place at all
+     * this method should return {@code false}.
+     *
+     * @param out       {@link ByteBuf} into which the token will be written.
+     * @param dcid      the destination connection id.
+     * @param address   the {@link InetSocketAddress} of the sender.
+     * @return          {@code true} if a token was written and so validation should happen, {@code false} otherwise.
+     */
+    boolean writeNewToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address);
+
+    /**
+     * Validate the token and return the {@link ResultWrapper} that contains token validation result.
      *
      * @param token     the {@link ByteBuf} that contains the token. The ownership is not transferred.
      * @param address   the {@link InetSocketAddress} of the sender.
-     * @return          the start index after the token or {@code -1} if the token was not valid.
+     * @return          the {@link ResultWrapper} that contains token validation result.
      */
-    int validateToken(ByteBuf token, InetSocketAddress address);
+    ResultWrapper validateToken(ByteBuf token, InetSocketAddress address);
 
     /**
      * Return the maximal token length.

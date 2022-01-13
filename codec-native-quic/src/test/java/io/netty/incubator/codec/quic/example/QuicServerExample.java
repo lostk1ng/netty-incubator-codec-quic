@@ -26,12 +26,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.netty.incubator.codec.quic.InsecureQuicTokenHandler;
-import io.netty.incubator.codec.quic.QuicChannel;
-import io.netty.incubator.codec.quic.QuicServerCodecBuilder;
-import io.netty.incubator.codec.quic.QuicSslContext;
-import io.netty.incubator.codec.quic.QuicSslContextBuilder;
-import io.netty.incubator.codec.quic.QuicStreamChannel;
+import io.netty.incubator.codec.quic.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -49,7 +44,7 @@ public final class QuicServerExample {
         SelfSignedCertificate selfSignedCertificate = new SelfSignedCertificate();
         QuicSslContext context = QuicSslContextBuilder.forServer(
                 selfSignedCertificate.privateKey(), null, selfSignedCertificate.certificate())
-                .applicationProtocols("http/0.9").build();
+                .applicationProtocols("http/0.9").keylog(true).build();
         NioEventLoopGroup group = new NioEventLoopGroup(1);
         ChannelHandler codec = new QuicServerCodecBuilder().sslContext(context)
                 .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)

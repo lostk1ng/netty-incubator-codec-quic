@@ -488,6 +488,10 @@ static jint netty_quiche_conn_set_session(JNIEnv* env, jclass clazz, jlong conn,
     return (jint) quiche_conn_set_session((quiche_conn *) conn, (uint8_t *) buf, (size_t) buf_len);
 }
 
+static void netty_quiche_conn_set_token(JNIEnv* env, jclass clazz, jlong conn, jlong token, jint token_len) {
+    quiche_conn_set_token((quiche_conn *) conn, (const uint8_t *) token, (size_t) token_len);
+}
+
 static jlong netty_quiche_config_new(JNIEnv* env, jclass clazz, jint version) {
     quiche_config* config = quiche_config_new((uint32_t) version);
     return config == NULL ? -1 : (jlong) config;
@@ -720,6 +724,7 @@ static const JNINativeMethod fixed_method_table[] = {
   { "quiche_conn_dgram_recv", "(JJI)I", (void* ) netty_quiche_conn_dgram_recv },
   { "quiche_conn_dgram_send", "(JJI)I", (void* ) netty_quiche_conn_dgram_send },
   { "quiche_conn_set_session", "(J[B)I", (void* ) netty_quiche_conn_set_session },
+  { "quiche_conn_set_token", "(JJI)V", (void* ) netty_quiche_conn_set_token },
   { "quiche_config_new", "(I)J", (void *) netty_quiche_config_new },
   { "quiche_config_enable_dgram", "(JZII)V", (void *) netty_quiche_config_enable_dgram },
   { "quiche_config_grease", "(JZ)V", (void *) netty_quiche_config_grease },

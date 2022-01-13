@@ -15,16 +15,17 @@
   ~ under the License.
   -->
 <configuration debug="false">
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT" class="ch.qos.logback.core.FileAppender">
+        <file>/Users/Lee/tmp/key.log</file>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%m%n</pattern>
         </encoder>
     </appender>
 
     <appender name="TEST" class="io.netty.incubator.codec.quic.TestLogBackAppender"/>
 
     <logger name="io.netty.incubator.codec.quic.BoringSSLKeylogCallback" level="debug" additivity="false">
-        <appender-ref ref="TEST" />
+        <appender-ref ref="STDOUT" />
     </logger>
 
     <root level="${logLevel:-info}">

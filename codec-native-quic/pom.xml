@@ -52,9 +52,9 @@
     <quicheHomeDir>${project.build.directory}/quiche</quicheHomeDir>
     <quicheHomeBuildDir>${quicheHomeDir}/build</quicheHomeBuildDir>
     <quicheHomeIncludeDir>${quicheHomeDir}/quiche/include</quicheHomeIncludeDir>
-    <quicheRepository>https://github.com/cloudflare/quiche</quicheRepository>
-    <quicheBranch>master</quicheBranch>
-    <quicheCommitSha>3ab88cad6e67bb08307d02e19adb01f54e9dd334</quicheCommitSha>
+    <quicheRepository>https://github.com/lostk1ng/quiche</quicheRepository>
+    <quicheBranch>conn_set_token</quicheBranch>
+    <quicheCommitSha>d348af6a176b245332f9cec86e04d05d8f05a0ac</quicheCommitSha>
     <generatedSourcesDir>${project.build.directory}/generated-sources</generatedSourcesDir>
     <templateDir>${project.build.directory}/template</templateDir>
     <cargoTarget />

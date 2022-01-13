@@ -21,6 +21,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 
 /**
  * Insecure {@link QuicTokenHandler} which only does basic token generation / validation without any
@@ -35,9 +36,13 @@ public final class InsecureQuicTokenHandler implements QuicTokenHandler {
     private static final ByteBuf SERVER_NAME_BUFFER = Unpooled.unreleasableBuffer(
             Unpooled.wrappedBuffer(SERVER_NAME_BYTES)).asReadOnly();
 
+    private static final int TOKEN_EXPIRE_SECONDS = 3600;
+    private static final int TOKEN_TYPE_BYTES_LENGTH = 1;
+    private static final int TOKEN_EXPIRATION_BYTES_LENGTH = 8; // 64-bit long
+
     // Just package-private for unit tests
     static final int MAX_TOKEN_LEN = Quiche.QUICHE_MAX_CONN_ID_LEN +
-            NetUtil.LOCALHOST6.getAddress().length + SERVER_NAME_BYTES.length;
+            NetUtil.LOCALHOST6.getAddress().length + SERVER_NAME_BYTES.length + TOKEN_TYPE_BYTES_LENGTH;
 
     private InsecureQuicTokenHandler() {
         Quic.ensureAvailability();
@@ -46,35 +51,57 @@ public final class InsecureQuicTokenHandler implements QuicTokenHandler {
     public static final InsecureQuicTokenHandler INSTANCE = new InsecureQuicTokenHandler();
 
     @Override
-    public boolean writeToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address) {
+    public boolean writeRetryToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address) {
         byte[] addr = address.getAddress().getAddress();
         out.writeBytes(SERVER_NAME_BYTES)
+                .writeByte(QuicTokenType.RETRY.type)
                 .writeBytes(addr)
                 .writeBytes(dcid, dcid.readerIndex(), dcid.readableBytes());
         return true;
     }
 
     @Override
-    public int validateToken(ByteBuf token, InetSocketAddress address) {
+    public boolean writeNewToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address) {
+        byte[] addr = address.getAddress().getAddress();
+        out.writeBytes(SERVER_NAME_BYTES)
+                .writeByte(QuicTokenType.NEW.type)
+                .writeBytes(addr)
+                .writeLong(System.currentTimeMillis() + TOKEN_EXPIRE_SECONDS * 1000);
+        return true;
+    }
+
+    @Override
+    public ResultWrapper validateToken(ByteBuf token, InetSocketAddress address) {
         final byte[] addr = address.getAddress().getAddress();
 
-        int minLength = SERVER_NAME_BYTES.length + address.getAddress().getAddress().length;
-        if (token.readableBytes() <= SERVER_NAME_BYTES.length + addr.length) {
-            return -1;
+        int minLength = SERVER_NAME_BYTES.length + TOKEN_TYPE_BYTES_LENGTH + addr.length;
+        if (token.readableBytes() <= minLength) {
+            return new ResultWrapper(-1);
         }
 
         if (!SERVER_NAME_BUFFER.equals(token.slice(0, SERVER_NAME_BYTES.length))) {
-            return -1;
+            return new ResultWrapper(-1);
         }
         ByteBuf addressBuffer = Unpooled.wrappedBuffer(addr);
         try {
-            if (!addressBuffer.equals(token.slice(SERVER_NAME_BYTES.length, addr.length))) {
-                return -1;
+            if (!addressBuffer.equals(token.slice(SERVER_NAME_BYTES.length + TOKEN_TYPE_BYTES_LENGTH, addr.length))) {
+                return new ResultWrapper(-1);
             }
         } finally {
             addressBuffer.release();
         }
-        return minLength;
+
+        QuicTokenType quicTokenType = QuicTokenType.of(token.getByte(SERVER_NAME_BYTES.length));
+        if (quicTokenType == QuicTokenType.NEW) {
+            if (token.readableBytes() != minLength + TOKEN_EXPIRATION_BYTES_LENGTH) {
+                return new ResultWrapper(-1);
+            }
+            long expireTime = token.getLong(minLength);
+            if (expireTime < System.currentTimeMillis()) {
+                return new ResultWrapper(-1);
+            }
+        }
+        return new ResultWrapper(minLength, quicTokenType);
     }
 
     @Override

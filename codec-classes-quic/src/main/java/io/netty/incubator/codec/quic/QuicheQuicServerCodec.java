@@ -130,7 +130,7 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
             return null;
         }
 
-        final int offset;
+        final QuicTokenHandler.ResultWrapper tokenResult;
         boolean noToken = false;
         if (!token.isReadable()) {
             // Clear buffers so we can reuse these.
@@ -138,7 +138,7 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
             connIdBuffer.clear();
 
             // The remote peer did not send a token.
-            if (tokenHandler.writeToken(mintTokenBuffer, dcid, sender)) {
+            if (tokenHandler.writeRetryToken(mintTokenBuffer, dcid, sender)) {
                 ByteBuffer connId = connectionIdAddressGenerator.newId(
                         dcid.internalNioBuffer(dcid.readerIndex(), dcid.readableBytes()), localConnIdLength);
                 connIdBuffer.writeBytes(connId);
@@ -160,11 +160,11 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
                 }
                 return null;
             }
-            offset = 0;
+            tokenResult = new QuicTokenHandler.ResultWrapper(0);
             noToken = true;
         } else {
-            offset = tokenHandler.validateToken(token, sender);
-            if (offset == -1) {
+            tokenResult = tokenHandler.validateToken(token, sender);
+            if (tokenResult.getOffset() == -1) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("invalid token: {}", token.toString(CharsetUtil.US_ASCII));
                 }
@@ -178,7 +178,7 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
         final long ocidAddr;
         final int ocidLen;
 
-        if (noToken) {
+        if (noToken || tokenResult.getQuicTokenType() == QuicTokenType.NEW) {
             connIdBuffer.clear();
             key = connectionIdAddressGenerator.newId(
                     dcid.internalNioBuffer(dcid.readerIndex(), dcid.readableBytes()), localConnIdLength);
@@ -190,8 +190,8 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
         } else {
             scidAddr = Quiche.memoryAddress(dcid) + dcid.readerIndex();
             scidLen = localConnIdLength;
-            ocidAddr = Quiche.memoryAddress(token) + offset;
-            ocidLen = token.readableBytes() - offset;
+            ocidAddr = Quiche.memoryAddress(token) + tokenResult.getOffset();
+            ocidLen = token.readableBytes() - tokenResult.getOffset();
             // Now create the key to store the channel in the map.
             byte[] bytes = new byte[localConnIdLength];
             dcid.getBytes(dcid.readerIndex(), bytes);
